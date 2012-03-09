@@ -12,35 +12,38 @@ mountfs /dev/sda3 ext4 / noatime
 
 # retrieve latest autobuild stage version for stage_uri
 if [ "${arch}" == "x86" ]; then
-    wget -q http://distfiles.gentoo.org/releases/${arch}/autobuilds/latest-stage3-$(uname -m).txt -O /tmp/stage3.version
+    wget -q ftp://ftp.free.fr/mirrors/ftp.gentoo.org/releases/${arch}/autobuilds/latest-stage3-$(uname -m).txt -O /tmp/stage3.version
 elif [ "${arch}" == "amd64" ]; then
-    wget -q http://distfiles.gentoo.org/releases/${arch}/autobuilds/latest-stage3-${arch}.txt -O /tmp/stage3.version
+    wget -q ftp://ftp.free.fr/mirrors/ftp.gentoo.org/releases/${arch}/autobuilds/latest-stage3-${arch}.txt -O /tmp/stage3.version
 fi
 latest_stage_version=$(cat /tmp/stage3.version | grep tar.bz2)
 
-stage_uri               http://distfiles.gentoo.org/releases/${arch}/autobuilds/${latest_stage_version}
-tree_type   snapshot    http://distfiles.gentoo.org/snapshots/portage-latest.tar.bz2
+stage_uri               ftp://ftp.free.fr/mirrors/ftp.gentoo.org/releases/${arch}/autobuilds/${latest_stage_version}
+tree_type   snapshot    ftp://ftp.free.fr/mirrors/ftp.gentoo.org/snapshots/portage-latest.tar.bz2
 
 # get kernel dotconfig from running kernel
-cat /proc/config.gz | gzip -d > /dotconfig
-kernel_config_file      /dotconfig
-kernel_sources	        gentoo-sources
-genkernel_opts          --loglevel=5
+#cat /proc/config.gz | gzip -d > /dotconfig
+#kernel_config_file      /dotconfig
+#kernel_sources	        gentoo-sources
+#genkernel_opts          --loglevel=5
 
 # ship the binary kernel instead of compiling (faster)
-#kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
-#initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
-#systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
+kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
+initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
+systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
 
 timezone                UTC
-rootpw                  a
+rootpw                  changeme!
 bootloader              grub
 keymap	                us # be-latin1 fr
 hostname                gentoo
-extra_packages          dhcpcd syslog-ng vim # openssh
+extra_packages          dhcpcd openssh syslog-ng vim
 
-#rcadd                   sshd       default
-#rcadd                   syslog-ng  default
+net eth0 dhcp
+
+rcadd                   sshd       default
+rcadd                   syslog-ng  default
+
 
 #############################################################################
 # 1. commented skip runsteps are actually running!                          #
@@ -104,13 +107,13 @@ extra_packages          dhcpcd syslog-ng vim # openssh
 # pre_prepare_chroot() {
 # }
 # skip prepare_chroot
-# post_prepare_chroot() { 
+# post_prepare_chroot() {
 # }
 
 # pre_setup_fstab() {
 # }
 # skip setup_fstab
-# post_setup_fstab() { 
+# post_setup_fstab() {
 # }
 
 # pre_fetch_repo_tree() {
@@ -197,7 +200,7 @@ extra_packages          dhcpcd syslog-ng vim # openssh
 # post_add_and_remove_services() {
 # }
 
-# pre_run_post_install_script() { 
+# pre_run_post_install_script() {
 # }
 # skip run_post_install_script
 # post_run_post_install_script() {
