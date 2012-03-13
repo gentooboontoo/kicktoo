@@ -193,6 +193,7 @@ rcadd                   syslog-ng  default
 # skip install_extra_packages
 post_install_extra_packages() {
     spawn_chroot "gem install chef --no-rdoc --no-ri" || die "could not install chef gem"
+    spawn_chroot "gem install puppet --no-rdoc --no-ri" || die "could not install puppet gem"
 }
 
 # pre_add_and_remove_services() {
