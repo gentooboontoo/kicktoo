@@ -23,14 +23,14 @@ tree_type   snapshot    ftp://ftp.free.fr/mirrors/ftp.gentoo.org/snapshots/porta
 
 # get kernel dotconfig from running kernel
 #cat /proc/config.gz | gzip -d > /dotconfig
-#kernel_config_file      /dotconfig
-#kernel_sources	        gentoo-sources
-#genkernel_opts          --loglevel=5
+kernel_config_file      /dotconfig
+kernel_sources	        gentoo-sources
+genkernel_opts          --loglevel=5
 
 # ship the binary kernel instead of compiling (faster)
-kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
-initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
-systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
+#kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
+#initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
+#systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
 
 timezone                UTC
 rootpw                  vagrant
