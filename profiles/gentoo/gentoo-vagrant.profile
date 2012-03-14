@@ -22,7 +22,7 @@ stage_uri               ftp://ftp.free.fr/mirrors/ftp.gentoo.org/releases/${arch
 tree_type   snapshot    ftp://ftp.free.fr/mirrors/ftp.gentoo.org/snapshots/portage-latest.tar.bz2
 
 # get kernel dotconfig from running kernel
-#cat /proc/config.gz | gzip -d > /dotconfig
+cat /proc/config.gz | gzip -d > /dotconfig
 kernel_config_file      /dotconfig
 kernel_sources	        gentoo-sources
 genkernel_opts          --loglevel=5
