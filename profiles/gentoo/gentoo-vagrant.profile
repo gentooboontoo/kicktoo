@@ -37,12 +37,13 @@ rootpw                  vagrant
 bootloader              grub
 keymap	                us # be-latin1 fr
 hostname                vagrant-gentoo
-extra_packages          dhcpcd openssh rubygems syslog-ng vim
+extra_packages          dhcpcd openssh rubygems syslog-ng vim virtualbox-guest-additions
 
 net eth0 dhcp
 
-rcadd                   sshd       default
-rcadd                   syslog-ng  default
+rcadd                   sshd                        default
+rcadd                   syslog-ng                   default
+rcadd                   virtualbox-guest-additions  default
 
 
 #############################################################################
