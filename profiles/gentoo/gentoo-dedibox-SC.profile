@@ -27,11 +27,6 @@ kernel_config_file      $(pwd)/kconfig/dedibox-SC-${arch}-kernel.config
 kernel_sources          gentoo-sources
 genkernel_opts          --loglevel=5
 
-# ship the binary kernel instead of compiling (faster)
-#kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
-#initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
-#systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
-
 timezone                UTC
 rootpw                  a
 bootloader              grub

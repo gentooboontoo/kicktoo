@@ -62,14 +62,15 @@ fdisk_command() {
     local cmd=$2
 
     debug fdisk_command "running fdisk command '${cmd}' on device ${device}"
-    spawn "partprobe ${device}"
-    spawn "echo -en '${cmd}\nw\n' | fdisk ${device}"
-    spawn "partprobe ${device}"
-#   return $?
+    spawn "partprobe ${device}" \
+    && spawn "echo -en '${cmd}\nw\n' | fdisk ${device}" \
+    && spawn "partprobe ${device}"
+
+    return $?
 }
 
 local arch=$(get_arch)
-if [ -f "modules/partition_${arch}.sh" ] || [ -f "/usr/lib/kicktoo-${VERSION}/modules/partition_${arch}.sh" ]; then
+if [ -f "modules/partition_${arch}.sh" ] || [ -f "/usr/lib/kicktoo/modules/partition_${arch}.sh" ]; then
     debug partition.sh "loading arch-specific module partition_${arch}.sh"
     import partition_${arch}
 fi

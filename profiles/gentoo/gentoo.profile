@@ -22,15 +22,20 @@ stage_uri               ftp://ftp.free.fr/mirrors/ftp.gentoo.org/releases/${arch
 tree_type   snapshot    ftp://ftp.free.fr/mirrors/ftp.gentoo.org/snapshots/portage-latest.tar.bz2
 
 # get kernel dotconfig from running kernel
-#cat /proc/config.gz | gzip -d > /dotconfig
-#kernel_config_file      /dotconfig
-#kernel_sources	        gentoo-sources
-#genkernel_opts          --loglevel=5
+cat /proc/config.gz | gzip -d > /dotconfig
+# get rid of Gentoo official firmware .config..
+grep -v CONFIG_EXTRA_FIRMWARE /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+# ..and lzo compression
+grep -v LZO                   /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+
+kernel_config_file      /dotconfig
+kernel_sources	        gentoo-sources
+genkernel_opts          --loglevel=5
 
 # ship the binary kernel instead of compiling (faster)
-kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
-initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
-systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
+#kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-3.2.1-gentoo-r2
+#initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-3.2.1-gentoo-r2
+#systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-3.2.1-gentoo-r2
 
 timezone                UTC
 rootpw                  changeme!

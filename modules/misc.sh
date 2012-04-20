@@ -23,10 +23,16 @@ get_mac_address() {
 # baselayout-1 & baselayout-2 config syntax is not compatible
 # uppercase in baselayout-1 lower in -2
 detect_baselayout2() {
-    spawn_chroot "[ -e /lib/librc.so ] && true " && true
+    spawn_chroot "[ -e /lib/librc.so ]" 
 }
 
 # grub-0.9x & grub-1.9x config syntax is not compatible
 detect_grub2() {
-    spawn_chroot "[ -e /sbin/grub-setup ] && true " && true
+    # find installed grub version: 0 is version 1 and 1 is version
+    vgrub=$(cat ${chroot_dir}/var/db/pkg/sys-boot/grub*/PF | cut -d"-" -f2 | cut -d. -f1)
+    if [ "$vgrub" == "1" ] || [ "$vgrub" == "2" ]; then
+        bootloader=grub2
+    else
+        bootloader=grub
+    fi
 }

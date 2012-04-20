@@ -29,7 +29,7 @@ tree_type     snapshot  http://distfiles.gentoo.org/snapshots/portage-latest.tar
 kernel_sources          gentoo-sources
 
 kernel_builder          kigen
-kigen_kernel_opts       --debug --nocolor
+kigen_kernel_opts       --debug # --nocolor
 kernel_config_file      $(pwd)/kconfig/dedibox-SC-${arch}-kernel.config
 
 initramfs_builder       kigen
@@ -38,7 +38,7 @@ kigen_initramfs_opts    --debug --nocolor --source-luks --source-dropbear --debu
 timezone                UTC
 rootpw                  a
 bootloader              grub
-bootloader_kernel_args  crypt_root=/dev/sda3 # should match root device in the $luks variable
+bootloader_kernel_args  crypt_root=/dev/sda3 docrypt dokeymap keymap=fr dodropbear ip=dhcp # should match root device in the $luks variable
 keymap                  fr
 hostname                dedi-luks
 extra_packages          openssh # dhcpcd syslog-ng vim
@@ -156,9 +156,10 @@ pre_install_kernel_builder() {
 # }
 
 pre_build_kernel() {
-    for i in dev-libs/libgcrypt \
-             dev-libs/popt \
+    for i in dev-libs/libgcrypt    \
+             dev-libs/popt         \
 	     dev-libs/libgpg-error \
+	     sys-apps/util-linux   \
 	     sys-fs/cryptsetup
     do
         spawn_chroot "echo $i static-libs >> /etc/portage/package.use" || die "cannot append $i to package.use"
@@ -173,23 +174,15 @@ post_build_kernel() {
     # build kernel w/ KIGen
     if [ "${kernel_builder}" == "kigen" ]; then
         if [ -n "${kernel_config_uri}" ]; then
-            fetch "${kernel_config_uri}" "${chroot_dir}/tmp/kconfig"            || die "could not fetch kernel config"
-
-            # FIXME in KIGen: make sure oldconfig pass ok
-            spawn_chroot "cp ${chroot_dir}/tmp/kconfig /usr/src/linux/.config"  || die "could not cp kernel config"
-            spawn_chroot "cd /usr/src/linux && yes '' | make oldconfig "        || die "cannot make oldconfig before running KIGen"
-
-            spawn_chroot "kigen ${kigen_kernel_opts} kernel"                    || die "could not build custom kernel"
-
+            fetch "${kernel_config_uri}" "${chroot_dir}/tmp/kconfig" || die "could not fetch kernel config"
         elif [ -n "${kernel_config_file}" ]; then
-            cp "${kernel_config_file}" "${chroot_dir}/tmp/kconfig"              || die "could not copy kernel config"
-            
-            # FIXME in KIGen: make sure oldconfig pass ok
-            spawn_chroot "cp /tmp/kconfig /usr/src/linux/.config"               || die "could not cp kernel config"
-            spawn_chroot "cd /usr/src/linux && yes '' | make oldconfig "        || die "cannot make oldconfig before running KIGen"
-
-            spawn_chroot "kigen ${kigen_kernel_opts} kernel"                    || die "could not build custom kernel"
+            cp "${kernel_config_file}" "${chroot_dir}/tmp/kconfig"   || die "could not copy kernel config"
         fi
+
+        # FIXME in KIGen: make sure oldconfig pass ok
+        spawn_chroot "cp ${chroot_dir}/tmp/kconfig /usr/src/linux/.config" || die "could not cp kernel config"
+        spawn_chroot "cd /usr/src/linux && yes '' | make oldconfig "       || die "cannot make oldconfig before running KIGen"
+        spawn_chroot "kigen ${kigen_kernel_opts} kernel"                   || die "could not build custom kernel"
     fi
 }
 

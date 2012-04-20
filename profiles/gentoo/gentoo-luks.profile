@@ -27,19 +27,30 @@ tree_type   snapshot    http://distfiles.gentoo.org/snapshots/portage-latest.tar
 
 # get kernel dotconfig from running kernel
 cat /proc/config.gz | gzip -d > /dotconfig
+# get rid of Gentoo official firmware .config
+grep -v CONFIG_EXTRA_FIRMWARE /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+grep -v LZO                   /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+grep -v CONFIG_CRYPTO_AES     /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+grep -v CONFIG_CRYPTO_CBC     /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+grep -v CONFIG_CRYPTO_SHA256  /dotconfig > /dotconfig2 ; mv /dotconfig2 /dotconfig
+# enable the required ones
+echo "CONFIG_CRYPTO_AES=y"    >> /dotconfig
+echo "CONFIG_CRYPTO_CBC=y"    >> /dotconfig
+echo "CONFIG_CRYPTO_SHA256=y" >> /dotconfig
+
 kernel_config_file      /dotconfig
 genkernel_opts          --loglevel=5 --luks
 kernel_sources          gentoo-sources
 
 # ship the binary kernel instead of compiling (faster)
-#kernel_binary           $(pwd)/kbin/kernel-genkernel-${arch}-2.6.39-gentoo-r3
-#initramfs_binary        $(pwd)/kbin/initramfs-genkernel-${arch}-2.6.39-gentoo-r3
-#systemmap_binary        $(pwd)/kbin/System.map-genkernel-${arch}-2.6.39-gentoo-r3
+#kernel_binary           $(pwd)/kbin/luks/kernel-genkernel-${arch}-3.2.1-gentoo-r2
+#initramfs_binary        $(pwd)/kbin/luks/initramfs-genkernel-${arch}-3.2.1-gentoo-r2
+#systemmap_binary        $(pwd)/kbin/luks/System.map-genkernel-${arch}-3.2.1-gentoo-r2
 
 timezone                UTC
 bootloader              grub
 bootloader_kernel_args  crypt_root=/dev/sda3 # should match root device in the $luks variable
-rootpw                  a
+rootpw                  a # CHANGE ME
 keymap                  us # fr be-latin1
 hostname                gentoo-luks
 extra_packages          dhcpcd # openssh syslog-ng
@@ -150,10 +161,15 @@ extra_packages          dhcpcd # openssh syslog-ng
 # }
 
 pre_build_kernel() {
-    # FIXME don't global USE static-libs but apply only for cryptsetup and deps
-    spawn_chroot "emerge gentoolkit"    || die "could not merge gentoolkit"
-    spawn_chroot "euse -E static-libs"  || die "could not enable static-libs USE"
-    spawn_chroot "emerge cryptsetup"    || die "could not emerge cryptsetup"
+    for i in dev-libs/libgcrypt     \
+             dev-libs/popt          \
+             dev-libs/libgpg-error  \
+             sys-apps/util-linux    \
+             sys-fs/cryptsetup
+    do
+        spawn_chroot "echo $i static-libs >> /etc/portage/package.use" || die "cannot append $i to package.use"
+    done
+    spawn_chroot "emerge cryptsetup" || die "could not emerge cryptsetup"
 }
 # skip build_kernel
 # post_build_kernel() {

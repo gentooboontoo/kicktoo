@@ -105,7 +105,6 @@ format_devices() {
                 formatcmd="mke2fs ${devnode}"
                 ;;
             ext3)
-                #mkfs.ext3 -j -m 1 -O dir_index,filetype,sparse_super /dev/mapper/root
                 formatcmd="mkfs.ext3 -j -m 1 -O dir_index,filetype,sparse_super ${devnode}"
                 ;;
             ext4)
@@ -148,6 +147,7 @@ mount_local_partitions() {
             case "${type}" in
                 swap)
                     spawn "swapon ${devnode}" || warn "could not activate swap ${devnode}"
+                    swapoffs="${devnode} "
                     ;;
                 ext2|ext3|ext4|reiserfs|reiserfs3|xfs|btrfs)
                     echo "mount -t ${type} ${devnode} ${chroot_dir}${mountpoint} ${mountopts}" >> /tmp/install.mounts
@@ -244,10 +244,10 @@ create_makeconf() {
 }
 
 set_locale() {
-	# make sure locale.gen is not overwritten automatically
-	export CONFIG_PROTECT="/etc/locale.gen"
-	echo "LANG=${system_locale}" >> ${chroot_dir}/etc/env.d/02locale
-	grep ${system_locale} /usr/share/i18n/SUPPORTED > ${chroot_dir}/etc/locale.gen
+    # make sure locale.gen is not overwritten automatically
+    export CONFIG_PROTECT="/etc/locale.gen"
+    echo "LANG=${system_locale}" >> ${chroot_dir}/etc/env.d/02locale
+    grep ${system_locale} /usr/share/i18n/SUPPORTED > ${chroot_dir}/etc/locale.gen
 }
 
 prepare_chroot() {
@@ -325,10 +325,10 @@ unpack_repo_tree() {
 
 copy_kernel() {
     spawn_chroot "mount /boot"
-    # NOTE let cp fail if files are not there
-    cp "${kernel_binary}"       "${chroot_dir}/boot" || die "could not copy precompiled kernel to ${chroot_dir}/boot"
-    cp "${initramfs_binary}"    "${chroot_dir}/boot" || die "could not copy precompiled kernel to ${chroot_dir}/boot"
-    cp "${systemmap_binary}"    "${chroot_dir}/boot" || die "could not copy precompiled kernel to ${chroot_dir}/boot"
+    # let cp fail if files are not there
+    cp "${kernel_binary}"    "${chroot_dir}/boot" || die "could not copy precompiled kernel to ${chroot_dir}/boot"
+    cp "${initramfs_binary}" "${chroot_dir}/boot" || die "could not copy precompiled kernel to ${chroot_dir}/boot"
+    cp "${systemmap_binary}" "${chroot_dir}/boot" || die "could not copy precompiled kernel to ${chroot_dir}/boot"
 }
 
 install_kernel_builder() {
@@ -356,7 +356,7 @@ build_kernel() {
         else
             spawn_chroot "genkernel ${genkernel_opts} kernel"                              || die "could not build generic kernel"
         fi
-    # use KIGen 
+    # use kigen 
     elif [ "${kernel_builder}" == "kigen" ]; then
         if [ -n "${kernel_config_uri}" ]; then
             fetch "${kernel_config_uri}" "${chroot_dir}/tmp/kconfig"                  || die "could not fetch kernel config"
@@ -374,7 +374,7 @@ build_initramfs() {
     # use genkernel
     if [ "${initramfs_builder}" == "genkernel" ]; then
         spawn_chroot "genkernel ${genkernel_opts} initramfs"    || die "could not build initramfs"
-    # use KIGen 
+    # use kigen
     elif [ "${initramfs_builder}" == "kigen" ]; then
         spawn_chroot "kigen ${kigen_initramfs_opts} initramfs"  || die "could not build initramfs"
     # use Dracut
@@ -448,9 +448,8 @@ install_bootloader() {
 }
 
 configure_bootloader() {
-    if detect_grub2; then
-        bootloader="grub2"
-    fi
+    detect_grub2
+
     if $(isafunc configure_bootloader_${bootloader}); then
         configure_bootloader_${bootloader} || die "could not configure bootloader ${bootloader}"
     else
@@ -509,17 +508,19 @@ cleanup() {
             sleep 0.3
         done
     fi
-#    if [ -f "/proc/swaps" ]; then
-#        for swap in $(awk '/^\// { print $1; }' /proc/swaps); do
-#            spawn "swapoff ${swap}" || warn "  could not deactivate swap on ${swap}"
-#        done
-#    fi
+    for swap in $(echo ${swapoffs}); do
+        spawn "swapoff ${swap} 2>/dev/null" || warn "  could not deactivate swap on ${swap}"
+    done
     for array in $(set | grep '^mdraid_' | cut -d= -f1 | sed -e 's:^mdraid_::' | sort); do
         spawn "mdadm --manage --stop /dev/${array}" || die "could not stop mdraid array ${array}"
     done
     if [ -d "/dev/mapper" ]; then
+        # NOTE let lvm cleanup before luks 
+        spawn "vgchange -a n vg" || warn "could not run vgchange -a n vg"
+        sleep 0.3
         for luksdev in $(ls /dev/mapper | grep -v control); do
             spawn "cryptsetup remove ${luksdev}" || warn "could not remove luks device /dev/mapper/${luksdev}"
+            sleep 0.3
         done
     fi
 }
@@ -529,15 +530,17 @@ starting_cleanup() {
 }
 
 finishing_cleanup() {
-    spawn "cp ${logfile} ${chroot_dir}/root/$(basename ${logfile})" || warn "could not copy install logfile into chroot"
+    if [ -f ${logfile} ]; then
+        spawn "cp ${logfile} ${chroot_dir}/root/$(basename ${logfile})" || warn "could not copy install logfile into chroot"
+    fi
 
     cleanup
 }
 
 failure_cleanup() {
-    cleanup
-
     if [ -f ${logfile} ]; then
-        spawn "mv ${logfile} ${logfile}.failed"     || warn "could not move ${logfile} to ${logfile}.failed"
+        spawn "mv ${logfile} ${logfile}.failed" || warn "could not move ${logfile} to ${logfile}.failed"
     fi
+
+    cleanup
 }
